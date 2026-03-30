@@ -18,7 +18,7 @@ def build_max(index,low,high,tree,arr):
         return
     mid = (low + high)//2
     build_max(2*index+1,low,mid,tree,arr) #Common storing technique of storing left portion to 2*index+1 position
-    build_max(2*index+2,mid,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
+    build_max(2*index+2,mid+1,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
     tree[index] = max(tree[index*2+1],tree[index*2+2]) #The index's value is the maximum of its left and right half values
     return tree
 
@@ -28,7 +28,7 @@ def build_min(index,low,high,tree,arr):
         return
     mid = (low + high)//2
     build_min(2*index+1,low,mid,tree,arr) #Common storing technique of storing left portion to 2*index+1 position
-    build_min(2*index+2,mid,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
+    build_min(2*index+2,mid+1,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
     tree[index] = min(tree[index*2+1],tree[index*2+2]) #The index's value is the minimum of its     left and right half values
     return tree
 
@@ -38,7 +38,7 @@ def build_sum(index,low,high,tree,arr):
         return
     mid = (low + high)//2
     build_sum(2*index+1,low,mid,tree,arr) #Common storing technique of storing left portion to 2*index+1 position
-    build_sum(2*index+2,mid,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
+    build_sum(2*index+2,mid+1,high,tree,arr) #Common storing technique of storing right portion to 2*index+2 position
     tree[index] = sum(tree[index*2+1],tree[index*2+2]) #The index's value is the minimum of its left and right half values
     return tree
 
