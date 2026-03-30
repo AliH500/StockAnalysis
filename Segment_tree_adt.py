@@ -1,7 +1,18 @@
-#Citation : https://www.youtube.com/watch?v=-dUiRtJ8ot0
+#Citation1 : https://www.youtube.com/watch?v=-dUiRtJ8ot0
+#Citation2 : https://www.youtube.com/watch?v=I7RFycpqbDk&t
 from math import ceil,log2
 
-def build_max(index,low,high,tree,arr):
+def create_tree(arr):
+    n = len(len(arr))
+    hieght = ceil(log2(n))
+    n_nodes = 2*(2**hieght) - 1
+    tree = []
+    for i in range(n_nodes):
+        tree.append(None)
+    return tree
+
+
+def build_max(index,low,high,tree,arr):    
     if low == high:
         tree[index] = arr[low]
         return
