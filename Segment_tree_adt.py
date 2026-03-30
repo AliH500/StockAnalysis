@@ -3,7 +3,7 @@
 from math import ceil,log2
 
 def create_tree(arr):
-    n = len(len(arr))
+    n = len(arr)
     hieght = ceil(log2(n))
     n_nodes = 2*(2**hieght) - 1
     tree = []
