@@ -64,10 +64,10 @@ def query_min(index,low,high,l,r,tree):
     #low and high is the range that the current tree[index] is responsible for
     max_value = 1*(10**20)
     
-    if low >= l and high <= r: #Full Overlap
+    if low >= l and high < r: #Full Overlap
         return tree[index]
     
-    if high<l or low>r: #No overlap
+    if high<l or low>=r: #No overlap
         return max_value
     
     #Partial Overlap
