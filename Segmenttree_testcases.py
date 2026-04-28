@@ -86,28 +86,29 @@ def get_user_input():
 
 
 # ---------- TEST CASES ----------
+if __name__ == '__main__':
 
-# 1. Basic first testing sample used
-run_all_tests([10, 9, 14, 5, 12, 3, 15, 21, 32, 51, 12, 14, 5])
+    # 1. Basic first testing sample used
+    run_all_tests([10, 9, 14, 5, 12, 3, 15, 21, 32, 51, 12, 14, 5])
 
-# 2. Single element
-run_all_tests([7])
+    # 2. Single element
+    run_all_tests([7])
 
-# 3. All equal values
-run_all_tests([5, 5, 5, 5])
+    # 3. All equal values
+    run_all_tests([5, 5, 5, 5])
 
-# 4. Negative values
-run_all_tests([-10, -5, -20, -3])
+    # 4. Negative values
+    run_all_tests([-10, -5, -20, -3])
 
-# 5. Mixed values
-run_all_tests([3, -1, 7, 0, -5, 8])
+    # 5. Mixed values
+    run_all_tests([3, -1, 7, 0, -5, 8])
 
-# 6. Empty array
-run_all_tests([])
+    # 6. Empty array
+    run_all_tests([])
 
-# 7. User input
-user_arr = get_user_input()
-run_all_tests(user_arr)
+    # 7. User input
+    user_arr = get_user_input()
+    run_all_tests(user_arr)
 
-# 8. Large input performance test
-run_all_tests(list(range(1000)))
+    # 8. Large input performance test
+    run_all_tests(list(range(1000)))

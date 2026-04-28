@@ -1,7 +1,7 @@
 #Citation1 : https://www.youtube.com/watch?v=-dUiRtJ8ot0
 #Citation2 : https://www.youtube.com/watch?v=I7RFycpqbDk&t
 from math import ceil,log2,inf
-from Segmenttree_testcases import *
+
 def create_tree(arr):
     n = len(arr)
     hieght = ceil(log2(n))
