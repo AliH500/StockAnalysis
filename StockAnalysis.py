@@ -8,14 +8,14 @@ import pandas as pd
 from Segment_tree_adt import (create_tree, build_max, build_min, build_sum, query_max, query_min, query_sum,get_mean, get_range, get_IQR,)
  
  
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 #  1 – Fetch Stock Data
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 
 def fetch_stock_data(ticker, csv_path):
     """
-    Fetch 7-day, 1-min interval closing prices for *ticker* using yfinance library.
-    Saves every row to *csv_path* and returns a list of dicts:
+    Fetch 7-day, 1-min interval closing prices for ticker using yfinance library.
+    Saves every row to csv_path and returns a list of dicts:
     [{"datetime": datetime_obj, "close": float}, ...]
  
     Time complexity: O(n)  -  each minute fetched and written once.
@@ -32,7 +32,7 @@ def fetch_stock_data(ticker, csv_path):
     if df.empty:
         raise ValueError(f"No data returned for {ticker}. Check the symbol and your internet connection.")
  
-    # Change timezone to UTC and remove timezone metadata info to avoid issues with datetime later
+    # Change timezone to UTC 
     if df.index.tz is not None:
         df.index = df.index.tz_convert("UTC").tz_localize(None)
     
@@ -41,6 +41,7 @@ def fetch_stock_data(ticker, csv_path):
         writer = csv.writer(fh)
         writer.writerow(["datetime", "open", "high", "low", "close", "volume"]) #Writes column names for the csv file
         for timestamp, row in df.iterrows():
+            #appending data to csv
             dt_str = timestamp.strftime("%Y-%m-%d %H:%M:%S") #converting timestamp to string format
             writer.writerow([
                 dt_str,
@@ -50,7 +51,8 @@ def fetch_stock_data(ticker, csv_path):
                 round(float(row["Close"]), 4),
                 int(row["Volume"]),
             ])
-            mydata.append({"datetime": timestamp.to_pydatetime(), "close": float(row["Close"])})
+            #appending the data to the list of dicts
+            mydata.append({"datetime": timestamp.to_pydatetime(), "close": float(row["Close"])})  
  
     print(f"{len(mydata)} rows saved to '{csv_path}'")
     return mydata
@@ -69,27 +71,22 @@ def load_stock_data(csv_path):
                 "datetime": datetime.strptime(r["datetime"], "%Y-%m-%d %H:%M:%S"),
                 "close":    float(r["close"]),
             })
-    print(f"[INFO] Loaded {len(rows)} rows from '{csv_path}'")
+    print(f"Loaded {len(rows)} rows from '{csv_path}'")
+    return rows
 
   
  
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 #  2 – SEGMENT TREE CONSTRUCTION
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
  
 def build_trees(close_prices):
     """
     Allocate three segment trees of size 4n (as per project spec) and
-    build max, min, and sum trees over *close_prices*.
- 
-    Size rationale
-    ──────────────
-    create_tree() uses  2*(2^ceil(log2(n))) - 1  nodes which is always
-    <= 4n.  For n = 2,310 (typical week) that is ~9,240 cells.
-    Worst-case spec (7*24*60 = 10,080 minutes) -> 4*10,080 = 40,320 nodes.
- 
-    Time complexity: O(n) per tree -> O(n) total (constant factor 3).
-    Space complexity: O(n) per tree.
+    build max, min, and sum trees over close_prices.
+  
+    Time complexity: O(3n) -> O(n) total.
+    Memory: O(3n) -> O(n) total.
     """
     n = len(close_prices)
     print(f"Building segment trees for {n} nodes")
@@ -107,9 +104,9 @@ def build_trees(close_prices):
     return max_tree, min_tree, sum_tree
  
  
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 #  SECTION 3 – DATETIME -> INDEX CONVERSION
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
  
 # All formats we'll try to parse, from most to least common
 DATETIME_FORMATS = [
@@ -139,11 +136,11 @@ def parse_datetime(dt_str: str) -> datetime:
  
 def datetime_to_index(target,timestamps):
     """
-    Map a target datetime to the nearest index in *timestamps* using
+    Map a target datetime to the nearest index in timestamps using
     binary search.  Falls back to nearest neighbour when no exact match
     (e.g. the user enters a time when the market was closed).
  
-    Time complexity: O(log n)
+    Time complexity: O(log n) [Binary Search]
     """
 
     lo, hi = 0, len(timestamps) - 1
@@ -157,7 +154,7 @@ def datetime_to_index(target,timestamps):
         else:
             hi = mid - 1
  
-    # lo is the insertion point; pick the closer neighbour
+    # lo is the insertion point. pick the closer neighbour
     if lo == 0:
         return 0
     if lo >= len(timestamps):
@@ -172,9 +169,9 @@ def datetime_to_index(target,timestamps):
         return lo
  
  
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 #  SECTION 4 – INTERACTIVE QUERY LOOP
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
  
 QUERY_MENU = """
    _____________________________________________
@@ -194,21 +191,21 @@ QUERY_MENU = """
  
 def get_query_range(timestamps):
     """
-    Prompt the user for start and end datetimes.
-    Returns (l, r) as segment-tree array indices.
+    Ask the user for start and end datetimes.
+    Returns (l, r) as segment-tree array indexes.
     """
 
-    print("  Enter a datetime in any of these formats:")
-    print("    YYYY-MM-DD HH:MM   |   DD/MM/YYYY HH:MM   |   DD Mon YYYY HH:MM")
+    print("Enter a datetime in any of these formats:")
+    print("YYYY-MM-DD HH:MM   |   DD/MM/YYYY HH:MM   |")
  
     start_str = input("Start datetime: ").strip()
-    end_str   = input("End datetime: ").strip()
+    end_str = input("End datetime: ").strip()
  
     start_dt = parse_datetime(start_str)
-    end_dt   = parse_datetime(end_str)
+    end_dt = parse_datetime(end_str)
  
     if end_dt < start_dt:
-        print("||WARNING|| End is before start — swapping them.")
+        print("[WARNING] End is before start — swapping them.")
         start_dt, end_dt = end_dt, start_dt
  
     l = datetime_to_index(start_dt, timestamps)
@@ -223,7 +220,7 @@ def get_query_range(timestamps):
  
  
 def query_loop(close_prices, timestamps, max_tree, min_tree, sum_tree):
-    """Interactive loop: let the user query the segment trees repeatedly."""
+    """Interactive loop: allows user to query the segment trees repeatedly."""
     n = len(close_prices)
  
     while True:
@@ -283,14 +280,14 @@ def query_loop(close_prices, timestamps, max_tree, min_tree, sum_tree):
     return "QUIT"
  
  
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
 #  SECTION 5 – MAIN ENTRY POINT
-# ─────────────────────────────────────────────────────────────────────────────
+# ________________________________________________________________
  
 def main():
     print("\n" + "=" * 57)
-    print("   Stock Range Analytics  –  Powered by Segment Trees")
-    print("   DSA Project  |  Ali Hani & Aaisha Siddiqui")
+    print(" Stock Analysis using Segment Trees")
+    print("|Ali Hani| & |Aaisha Siddiqui|")
     print("=" * 57)
  
     while True:
@@ -317,24 +314,22 @@ def main():
  
             elif choice == "F":
                 rows = fetch_stock_data(ticker, csv_path)
- 
- 
         except Exception as e:
             print(f"\n  [ERROR] {e}")
             continue
  
         if not rows:
-            print("  [ERROR] No data available. Please try again.")
+            print("[ERROR] No data available. Please try again.")
             continue
  
         # ── extract parallel arrays ───────────────────────────────────────
         timestamps   = [r["datetime"] for r in rows]   # list[datetime]
         close_prices = [r["close"]    for r in rows]   # list[float]
- 
-        print(f"\n  Ticker       : {ticker}")
+        print()
+        print(f"  Ticker     : {ticker}")
         print(f"  Data range   : {timestamps[0]}  ->  {timestamps[-1]}")
         print(f"  Total rows   : {len(rows)}")
-        print(f"  Price range  : ${min(close_prices):.4f}  –  ${max(close_prices):.4f}")
+        print(f"  Price range  : ${min(close_prices):.4f} | ${max(close_prices):.4f}")
  
         # ── build all three trees ─────────────────────────────────────────
         max_tree, min_tree, sum_tree = build_trees(close_prices)
