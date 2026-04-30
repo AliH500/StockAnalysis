@@ -295,12 +295,12 @@ def main():
         if not ticker:
             print("Ticker cannot be empty.")
             continue
-        time_now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        time_now = datetime.now().strftime("%Y-%m-%d %H_%M")
         csv_path = f"{ticker}__{time_now}.csv"
  
         # ── decide data source ────────────────────────────────────────────
         existing_csv = None
-        candidates = [f for f in os.listdir('.') if f.startswith(f"{ticker}__") and f.endswith('.csv')]
+        candidates = [f for f in os.listdir('.') if f.startswith(f"{ticker}__")]
         if candidates:
             existing_csv = max(candidates, key=os.path.getmtime)
             print(f"\n  Found existing CSV: '{existing_csv}'")
