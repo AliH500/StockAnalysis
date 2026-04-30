@@ -120,7 +120,7 @@ DATETIME_FORMATS = [
     "%d %B %Y %H:%M",    # e.g. 21 April 2025 09:30
 ]
  
-def parse_datetime(dt_str: str) -> datetime:
+def parse_datetime(dt_str):
     """Try several common formats; raise ValueError if none match."""
     dt_str = dt_str.strip()
     for fmt in DATETIME_FORMATS:
@@ -241,7 +241,7 @@ def query_loop(close_prices, timestamps, max_tree, min_tree, sum_tree):
         try:
             l, r = get_query_range(timestamps)
         except ValueError as e:
-            print(f"\n  [ERROR] {e}")
+            print(f"[ERROR] {e}")
             continue
  
         # ── dispatch to appropriate segment-tree function ─────────────────
@@ -285,7 +285,7 @@ def query_loop(close_prices, timestamps, max_tree, min_tree, sum_tree):
 # ________________________________________________________________
  
 def main():
-    print("\n" + "=" * 57)
+    print("=" * 57)
     print(" Stock Analysis using Segment Trees")
     print("|Ali Hani| & |Aaisha Siddiqui|")
     print("=" * 57)
@@ -299,8 +299,11 @@ def main():
         csv_path = f"{ticker}__{time_now}.csv"
  
         # ── decide data source ────────────────────────────────────────────
-        if os.path.exists(f"{ticker}"):
-            print(f"\n  Found existing CSV: '{csv_path}'")
+        existing_csv = None
+        candidates = [f for f in os.listdir('.') if f.startswith(f"{ticker}__") and f.endswith('.csv')]
+        if candidates:
+            existing_csv = max(candidates, key=os.path.getmtime)
+            print(f"\n  Found existing CSV: '{existing_csv}'")
             choice = input(
                 "  [L]oad existing  /  [F]etch fresh from Yahoo Finance"
             ).strip().upper()
@@ -309,10 +312,9 @@ def main():
  
         rows = None
         try:
-            if choice == "L" and os.path.exists(csv_path):
-                rows = load_stock_data(csv_path)
- 
-            elif choice == "F":
+            if choice == "L" and existing_csv:
+                rows = load_stock_data(existing_csv)
+            else:
                 rows = fetch_stock_data(ticker, csv_path)
         except Exception as e:
             print(f"\n  [ERROR] {e}")
