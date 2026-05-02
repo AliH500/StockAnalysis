@@ -1,5 +1,5 @@
-#Citation1 : https://www.youtube.com/watch?v=-dUiRtJ8ot0
-#Citation2 : https://www.youtube.com/watch?v=I7RFycpqbDk&t
+##Citation1 : https://www.youtube.com/watch?v=-dUiRtJ8ot0
+##Citation2 : https://www.youtube.com/watch?v=I7RFycpqbDk&t
 from math import ceil,log2,inf
 
 def create_tree(arr):
