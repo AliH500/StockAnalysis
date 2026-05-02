@@ -1,2 +1,2 @@
 # StockAnalysis
-DSA Project by Ali Hani &amp; Aaisha Siddiqui
+Data Structure and Algorithims Project  
