@@ -9,11 +9,21 @@ posts results to a `queue.Queue` and never touches this object.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
-from data_loader import StockSeries
-from v1_bridge import build_trees
+# V1's `StockAnalysis.py` and `Segment_tree_adt.py` live one level up at
+# the nested-repo root. Adding the parent dir to sys.path is the cleanest
+# import path that does not require restructuring the V1 files.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from StockAnalysis import build_trees  # noqa: E402
+
+from data_loader import StockSeries  # noqa: E402
 
 
 @dataclass

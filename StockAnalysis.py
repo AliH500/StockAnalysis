@@ -342,6 +342,7 @@ def main():
         if signal == "QUIT":
             break
         # signal == "RELOAD" -> loop back to ticker prompt
- 
- 
-main()
+
+
+if __name__ == "__main__":
+    main()

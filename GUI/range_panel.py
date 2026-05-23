@@ -23,7 +23,9 @@ from tkcalendar import DateEntry
 from app_state import AppState
 from theme import FONT_FAMILY
 
-from v1_bridge import datetime_to_index
+# `app_state` (imported above) inserts the V1 root onto sys.path, so the
+# unqualified import below resolves to V1's `StockAnalysis.py`.
+from StockAnalysis import datetime_to_index  # noqa: E402
 
 
 class _DateTimePicker(ctk.CTkFrame):

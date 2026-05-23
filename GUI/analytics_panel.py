@@ -11,10 +11,8 @@ import customtkinter as ctk
 from app_state import AppState
 from theme import FONT_FAMILY
 
-# `v1_bridge` (loaded transitively via `app_state` above) inserts the V1
-# root onto sys.path, so the unqualified import below resolves.
-# `Segment_tree_adt.py` is a pure function library with no auto-execute,
-# so importing from it directly is safe (unlike V1's `StockAnalysis.py`).
+# `app_state` (imported above) inserts the V1 root onto sys.path, so the
+# unqualified import below resolves to the V1 segment-tree ADT.
 from Segment_tree_adt import (  # noqa: E402
     query_max,
     query_min,
