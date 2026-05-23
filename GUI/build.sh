@@ -27,7 +27,7 @@ python3 -m PyInstaller \
     --windowed \
     --name "$NAME" \
     --paths GUI \
-    --add-data "GUI/fonts/Nunito-Medium.ttf${SEP}fonts" \
+    --add-data "GUI/fonts${SEP}fonts" \
     --add-data "StockAnalysis.py${SEP}v1" \
     --add-data "Segment_tree_adt.py${SEP}v1" \
     --collect-all customtkinter \

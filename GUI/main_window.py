@@ -39,29 +39,84 @@ def _resource_base() -> Path:
     return Path(__file__).resolve().parent
 
 
-FONT_PATH = _resource_base() / "fonts" / "Nunito-Medium.ttf"
+FONTS_DIR = _resource_base() / "fonts"
+FONT_PATH = FONTS_DIR / "Nunito-Medium.ttf"  # kept for back-compat in error logs
 
 
 def _register_fonts() -> tuple[bool, bool]:
-    """Returns (matplotlib_ok, tk_ok). Both degrade silently if False."""
+    """Make every bundled Nunito weight available to both matplotlib and Tk.
+
+    Returns (matplotlib_ok, tk_ok). Warnings are written to stderr so they
+    show up in the user's terminal when something silently degrades.
+
+    On Windows the Tk-side load uses the Win32 GDI `AddFontResourceExW`
+    with `FR_PRIVATE`, which registers the font into the current process
+    only — no admin rights, no extra C extension. `tkextrafont` is tried
+    as a fallback for Linux / macOS, but is no longer required for the
+    Windows executable to render correctly.
+    """
     matplotlib_ok = False
-    if FONT_PATH.exists():
-        try:
-            font_manager.fontManager.addfont(str(FONT_PATH))
+    if FONTS_DIR.is_dir():
+        registered = 0
+        for ttf in sorted(FONTS_DIR.glob("Nunito-*.ttf")):
+            try:
+                font_manager.fontManager.addfont(str(ttf))
+                registered += 1
+            except Exception as exc:
+                print(f"[font] matplotlib could not load {ttf.name}: {exc}", file=sys.stderr)
+        if registered:
             mpl.rcParams["font.family"] = FONT_FAMILY
             matplotlib_ok = True
-        except Exception:
-            pass
 
-    tk_ok = False
-    if FONT_PATH.exists():
-        try:
-            from tkextrafont import Font  # type: ignore
-            Font(file=str(FONT_PATH), family=FONT_FAMILY)
-            tk_ok = True
-        except Exception:
-            pass
+    tk_ok = _register_tk_fonts_win32() or _register_tk_fonts_extrafont()
+    if not tk_ok and FONTS_DIR.is_dir():
+        print(
+            f"[font] {FONT_FAMILY} could not be loaded into Tk; "
+            f"widgets will fall back to a system font. "
+            f"On Windows this should never happen; on Linux/macOS install "
+            f"`tkextrafont` (or the Nunito font system-wide) to fix.",
+            file=sys.stderr,
+        )
     return matplotlib_ok, tk_ok
+
+
+def _register_tk_fonts_win32() -> bool:
+    """Win32 AddFontResourceExW — Windows only, no third-party deps.
+    Loads every Nunito-*.ttf bundled in `FONTS_DIR` into the current process."""
+    if sys.platform != "win32" or not FONTS_DIR.is_dir():
+        return False
+    try:
+        import ctypes
+        FR_PRIVATE = 0x10
+        registered = 0
+        for ttf in sorted(FONTS_DIR.glob("Nunito-*.ttf")):
+            result = ctypes.windll.gdi32.AddFontResourceExW(str(ttf), FR_PRIVATE, 0)
+            if result > 0:
+                registered += 1
+            else:
+                print(f"[font] AddFontResourceExW failed for {ttf.name}", file=sys.stderr)
+        return registered > 0
+    except Exception as exc:
+        print(f"[font] Win32 font registration errored: {exc}", file=sys.stderr)
+        return False
+
+
+def _register_tk_fonts_extrafont() -> bool:
+    """Cross-platform fallback using the tkextrafont C extension."""
+    if not FONTS_DIR.is_dir():
+        return False
+    try:
+        from tkextrafont import Font  # type: ignore
+    except Exception:
+        return False
+    registered = 0
+    for ttf in sorted(FONTS_DIR.glob("Nunito-*.ttf")):
+        try:
+            Font(file=str(ttf))
+            registered += 1
+        except Exception as exc:
+            print(f"[font] tkextrafont could not load {ttf.name}: {exc}", file=sys.stderr)
+    return registered > 0
 
 
 class MainWindow(ctk.CTk):

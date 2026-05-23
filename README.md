@@ -10,20 +10,8 @@ A Python application that fetches real-time stock data and performs lightning-fa
 
 The GUI is a single-window desktop app with a gradient price chart, six segment-tree analytics across both the full week and a user-defined sub-range, and a custom date picker.
 
-**Download the pre-built executable** from the [latest GitHub release](https://github.com/AliH500/StockAnalysis/releases/latest) — no Python install required.
+**Download the pre-built executable** from the [latest GitHub release](https://github.com/AliH500/StockAnalysis/releases/latest) — no Python install required. (Windows only)
 
-| Platform | Build | Notes |
-|---|---|---|
-| **Linux x86_64** | `StockAnalysis` (single file) | Built with PyInstaller; ~150 MB. Mark executable, then double-click. |
-| **Windows** | not pre-built | Build from source on a Windows machine — see the section at the end. |
-| **macOS** | not pre-built | Same — build from source on macOS. |
-
-Once downloaded:
-
-```bash
-chmod +x StockAnalysis
-./StockAnalysis
-```
 
 > If your machine doesn't have Nunito installed system-wide, the GUI's Tk widgets fall back to a default sans. The hero chart always uses the bundled Nunito.
 
