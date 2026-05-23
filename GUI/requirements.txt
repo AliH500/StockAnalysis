@@ -1,0 +1,9 @@
+customtkinter>=5.2.2
+matplotlib>=3.9
+tkcalendar>=1.6.1
+yfinance>=0.2.54
+pandas>=2.2
+Pillow>=10.3
+# Optional: enables in-process Nunito loading for Tk widgets without a
+# system font install. Matplotlib loads the bundled TTF regardless.
+tkextrafont>=0.6
