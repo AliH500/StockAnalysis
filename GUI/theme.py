@@ -1,6 +1,6 @@
 """
-Dark + light palettes and a single helper that paints a matplotlib axes
-to match. Pure data — no Tk widgets here.
+Dark + light palettes, font sizes, and a single helper that paints a
+matplotlib axes to match. Pure data — no Tk widgets here.
 """
 
 from __future__ import annotations
@@ -12,18 +12,41 @@ import matplotlib as mpl
 # of the family). Use this constant everywhere so the font lookup matches.
 FONT_FAMILY = "Nunito"
 
+# Centralised type scale. Bumped from the original release so everything
+# reads comfortably on a 1080p display.
+FONT_SIZES = {
+    "tiny": 12,
+    "small": 14,
+    "body": 16,
+    "label": 17,
+    "metric": 22,
+    "section": 18,
+    "title": 16,
+    "tick": 12,
+    "calendar_day": 14,
+    "calendar_header": 16,
+}
+
+# Up / down colours used on the chart line and gradient when the current
+# close is above / below the 7-day-ago close.
+UP_GREEN = "#22C55E"
+DOWN_RED = "#EF4444"
+# RGBA tuples for the gradient under the line, parallel to the line colour.
+UP_GRADIENT_TOP = (0.133, 0.773, 0.369, 0.55)
+UP_GRADIENT_BOTTOM = (0.133, 0.773, 0.369, 0.00)
+DOWN_GRADIENT_TOP = (0.937, 0.267, 0.267, 0.55)
+DOWN_GRADIENT_BOTTOM = (0.937, 0.267, 0.267, 0.00)
+
 DARK_PALETTE: dict = {
     "bg": "#0E1116",
     "panel_bg": "#161B22",
     "panel_border": "#222831",
     "text_primary": "#E6EDF3",
     "text_secondary": "#8B949E",
+    "text_muted": "#5C6772",
     "accent": "#58A6FF",
     "accent_muted": "#1F6FEB",
-    "chart_line": "#58A6FF",
-    # RGBA tuples on a 0-1 scale for matplotlib's colormap construction.
-    "gradient_top_rgba": (0.345, 0.651, 1.000, 0.55),
-    "gradient_bottom_rgba": (0.345, 0.651, 1.000, 0.00),
+    "hover_bg": "#1E242C",
     "axes_bg": "#0E1116",
     "tick_color": "#8B949E",
     "grid_color": "#222831",
@@ -33,6 +56,7 @@ DARK_PALETTE: dict = {
     "spinbox_button": "#222831",
     "error_text": "#F87171",
     "warning_text": "#FBBF24",
+    "reference_line": "#3A4250",
 }
 
 LIGHT_PALETTE: dict = {
@@ -41,11 +65,10 @@ LIGHT_PALETTE: dict = {
     "panel_border": "#E5E7EB",
     "text_primary": "#0F172A",
     "text_secondary": "#64748B",
+    "text_muted": "#94A3B8",
     "accent": "#2563EB",
     "accent_muted": "#1D4ED8",
-    "chart_line": "#2563EB",
-    "gradient_top_rgba": (0.145, 0.388, 0.922, 0.45),
-    "gradient_bottom_rgba": (0.145, 0.388, 0.922, 0.00),
+    "hover_bg": "#F1F5F9",
     "axes_bg": "#FFFFFF",
     "tick_color": "#64748B",
     "grid_color": "#E5E7EB",
@@ -55,6 +78,7 @@ LIGHT_PALETTE: dict = {
     "spinbox_button": "#E5E7EB",
     "error_text": "#DC2626",
     "warning_text": "#D97706",
+    "reference_line": "#CBD5E1",
 }
 
 
@@ -71,13 +95,10 @@ def apply_chart_style(ax, fig, palette: dict) -> None:
     ax.tick_params(
         axis="both",
         colors=palette["tick_color"],
-        labelsize=9,
+        labelsize=FONT_SIZES["tick"],
     )
     ax.grid(True, color=palette["grid_color"], linewidth=0.6, alpha=0.6)
     ax.set_axisbelow(True)
-    # Set font on existing text artists. rcParams is set globally at app
-    # init; this catches axes-local labels that may have been created
-    # before the font was registered.
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_color(palette["tick_color"])
         label.set_fontfamily(mpl.rcParams["font.family"])

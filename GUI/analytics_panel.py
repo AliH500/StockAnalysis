@@ -9,7 +9,7 @@ from __future__ import annotations
 import customtkinter as ctk
 
 from app_state import AppState
-from theme import FONT_FAMILY
+from theme import FONT_FAMILY, FONT_SIZES
 
 # `app_state` (imported above) inserts the V1 root onto sys.path, so the
 # unqualified import below resolves to the V1 segment-tree ADT.
@@ -40,7 +40,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         super().__init__(
             parent,
             fg_color=palette["panel_bg"],
-            corner_radius=12,
+            corner_radius=14,
             border_width=1,
             border_color=palette["panel_border"],
         )
@@ -52,32 +52,37 @@ class AnalyticsPanel(ctk.CTkFrame):
         self._title_label = ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT_FAMILY, 13, "bold"),
-            text_color=palette["text_secondary"],
+            font=(FONT_FAMILY, FONT_SIZES["section"], "bold"),
+            text_color=palette["text_primary"],
             anchor="w",
         )
-        self._title_label.grid(row=0, column=0, columnspan=2, sticky="ew", padx=14, pady=(12, 6))
+        self._title_label.grid(row=0, column=0, columnspan=2, sticky="ew", padx=18, pady=(16, 10))
 
+        self._name_labels: list[ctk.CTkLabel] = []
         self._value_labels: dict[str, ctk.CTkLabel] = {}
         for i, name in enumerate(METRIC_LABELS):
             name_label = ctk.CTkLabel(
                 self,
                 text=name,
-                font=(FONT_FAMILY, 12),
+                font=(FONT_FAMILY, FONT_SIZES["label"]),
                 text_color=palette["text_secondary"],
                 anchor="w",
             )
-            name_label.grid(row=i + 1, column=0, sticky="ew", padx=(14, 6), pady=2)
+            name_label.grid(row=i + 1, column=0, sticky="ew", padx=(18, 8), pady=4)
+            self._name_labels.append(name_label)
 
             value_label = ctk.CTkLabel(
                 self,
                 text=PLACEHOLDER,
-                font=(FONT_FAMILY, 14),
+                font=(FONT_FAMILY, FONT_SIZES["metric"], "bold"),
                 text_color=palette["text_primary"],
                 anchor="e",
             )
-            value_label.grid(row=i + 1, column=1, sticky="ew", padx=(6, 14), pady=2)
+            value_label.grid(row=i + 1, column=1, sticky="ew", padx=(8, 18), pady=4)
             self._value_labels[name] = value_label
+
+        # Tail spacer so the bottom row isn't flush against the border.
+        ctk.CTkLabel(self, text="").grid(row=len(METRIC_LABELS) + 1, column=0, pady=4)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -85,14 +90,11 @@ class AnalyticsPanel(ctk.CTkFrame):
     def apply_theme(self, palette: dict) -> None:
         self._palette = palette
         self.configure(fg_color=palette["panel_bg"], border_color=palette["panel_border"])
-        self._title_label.configure(text_color=palette["text_secondary"])
-        for name, value_label in self._value_labels.items():
+        self._title_label.configure(text_color=palette["text_primary"])
+        for value_label in self._value_labels.values():
             value_label.configure(text_color=palette["text_primary"])
-            # The name labels share the title's secondary tone; reach them
-            # via grid_slaves to avoid keeping a second dict.
-        for child in self.winfo_children():
-            if isinstance(child, ctk.CTkLabel) and child not in self._value_labels.values() and child is not self._title_label:
-                child.configure(text_color=palette["text_secondary"])
+        for name_label in self._name_labels:
+            name_label.configure(text_color=palette["text_secondary"])
 
     def refresh(self) -> None:
         if not self._state.has_data:

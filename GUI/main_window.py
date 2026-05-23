@@ -2,6 +2,9 @@
 Top-level CTk window. Lays out the chart, both analytics panels, and the
 range panel; owns the yfinance fetch lifecycle (daemon thread + queue +
 `root.after` poll); owns the theme toggle.
+
+Side-column order: Full week → Range query inputs → Selected range output.
+(Inputs sit directly above the output they drive.)
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from app_state import AppState
 from chart_widget import ChartWidget
 from data_loader import StockSeries, fetch_series
 from range_panel import RangePanel
-from theme import FONT_FAMILY, get_palette
+from theme import FONT_FAMILY, FONT_SIZES, get_palette
 
 POLL_INTERVAL_MS = 100
 ERROR_AUTOCLEAR_MS = 5000
@@ -60,8 +63,8 @@ class MainWindow(ctk.CTk):
         palette = get_palette(self._mode)
 
         self.title("Stock Analysis")
-        self.geometry("1280x780")
-        self.minsize(1100, 680)
+        self.geometry("1440x880")
+        self.minsize(1200, 760)
         self.configure(fg_color=palette["bg"])
 
         self._state = AppState()
@@ -76,25 +79,27 @@ class MainWindow(ctk.CTk):
     # ---- layout ----------------------------------------------------------
 
     def _build_layout(self, palette: dict) -> None:
-        # Top bar: ticker entry + Load + spinner + theme toggle.
+        # Top bar
         top = ctk.CTkFrame(self, fg_color="transparent")
-        top.pack(fill="x", padx=20, pady=(16, 8))
+        top.pack(fill="x", padx=24, pady=(20, 10))
 
         ctk.CTkLabel(
             top,
             text="Ticker",
-            font=(FONT_FAMILY, 13),
+            font=(FONT_FAMILY, FONT_SIZES["body"], "bold"),
             text_color=palette["text_secondary"],
-        ).pack(side="left", padx=(2, 8))
+        ).pack(side="left", padx=(2, 10))
 
         self._ticker_entry = ctk.CTkEntry(
             top,
-            width=140,
-            font=(FONT_FAMILY, 13),
+            width=180,
+            height=40,
+            font=(FONT_FAMILY, FONT_SIZES["body"]),
             placeholder_text="AAPL",
             border_color=palette["panel_border"],
             fg_color=palette["panel_bg"],
             text_color=palette["text_primary"],
+            corner_radius=8,
         )
         self._ticker_entry.pack(side="left")
         self._ticker_entry.bind("<Return>", lambda _e: self._on_load_clicked())
@@ -102,28 +107,29 @@ class MainWindow(ctk.CTk):
         self._load_button = ctk.CTkButton(
             top,
             text="Load",
-            width=88,
-            font=(FONT_FAMILY, 13, "bold"),
+            width=110,
+            height=40,
+            font=(FONT_FAMILY, FONT_SIZES["body"], "bold"),
             fg_color=palette["accent"],
             hover_color=palette["accent_muted"],
             text_color="#FFFFFF",
+            corner_radius=8,
             command=self._on_load_clicked,
         )
-        self._load_button.pack(side="left", padx=(8, 12))
+        self._load_button.pack(side="left", padx=(10, 16))
 
         self._spinner_label = ctk.CTkLabel(
             top,
             text="",
-            font=(FONT_FAMILY, 12),
+            font=(FONT_FAMILY, FONT_SIZES["small"]),
             text_color=palette["text_secondary"],
         )
         self._spinner_label.pack(side="left")
 
-        # Right side of top bar — theme toggle.
         self._theme_switch = ctk.CTkSwitch(
             top,
             text="Light mode",
-            font=(FONT_FAMILY, 12),
+            font=(FONT_FAMILY, FONT_SIZES["small"]),
             text_color=palette["text_secondary"],
             progress_color=palette["accent"],
             command=self._on_theme_toggle,
@@ -134,22 +140,22 @@ class MainWindow(ctk.CTk):
         self._error_label = ctk.CTkLabel(
             self,
             text="",
-            font=(FONT_FAMILY, 12),
+            font=(FONT_FAMILY, FONT_SIZES["small"]),
             text_color=palette["error_text"],
             anchor="w",
         )
-        self._error_label.pack(fill="x", padx=20, pady=(0, 4))
+        self._error_label.pack(fill="x", padx=24, pady=(0, 6))
 
         # Main two-column body: chart left, side panels right.
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(fill="both", expand=True, padx=20, pady=(4, 16))
+        body.pack(fill="both", expand=True, padx=24, pady=(4, 20))
 
         body.grid_columnconfigure(0, weight=3, uniform="cols")
         body.grid_columnconfigure(1, weight=2, uniform="cols")
         body.grid_rowconfigure(0, weight=1)
 
         self._chart = ChartWidget(body, self._state, palette)
-        self._chart.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        self._chart.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
 
         side = ctk.CTkFrame(body, fg_color="transparent")
         side.grid(row=0, column=1, sticky="nsew")
@@ -159,15 +165,11 @@ class MainWindow(ctk.CTk):
         side.grid_rowconfigure(2, weight=0)
         side.grid_rowconfigure(3, weight=1)
 
+        # Order: Full week → Range query inputs → Selected range output.
         self._week_panel = AnalyticsPanel(
             side, self._state, title="Full week", mode="week", palette=palette
         )
-        self._week_panel.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-
-        self._range_analytics = AnalyticsPanel(
-            side, self._state, title="Selected range", mode="range", palette=palette
-        )
-        self._range_analytics.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        self._week_panel.grid(row=0, column=0, sticky="ew", pady=(0, 12))
 
         self._range_panel = RangePanel(
             side,
@@ -175,7 +177,12 @@ class MainWindow(ctk.CTk):
             palette=palette,
             on_range_change=self._on_range_change,
         )
-        self._range_panel.grid(row=2, column=0, sticky="ew")
+        self._range_panel.grid(row=1, column=0, sticky="ew", pady=(0, 12))
+
+        self._range_analytics = AnalyticsPanel(
+            side, self._state, title="Selected range", mode="range", palette=palette
+        )
+        self._range_analytics.grid(row=2, column=0, sticky="ew")
 
     # ---- fetch lifecycle -------------------------------------------------
 
