@@ -57,7 +57,7 @@ class MainWindow(ctk.CTk):
         super().__init__()
         _register_fonts()
 
-        self._mode = "dark"
+        self._mode = "light"
         ctk.set_appearance_mode(self._mode)
         ctk.set_default_color_theme("blue")
         palette = get_palette(self._mode)
@@ -135,6 +135,8 @@ class MainWindow(ctk.CTk):
             command=self._on_theme_toggle,
         )
         self._theme_switch.pack(side="right")
+        # Default mode is light → switch starts in the ON position.
+        self._theme_switch.select()
 
         # Inline error message (red).
         self._error_label = ctk.CTkLabel(
@@ -157,22 +159,25 @@ class MainWindow(ctk.CTk):
         self._chart = ChartWidget(body, self._state, palette)
         self._chart.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
 
-        side = ctk.CTkFrame(body, fg_color="transparent")
-        side.grid(row=0, column=1, sticky="nsew")
-        side.grid_columnconfigure(0, weight=1)
-        side.grid_rowconfigure(0, weight=0)
-        side.grid_rowconfigure(1, weight=0)
-        side.grid_rowconfigure(2, weight=0)
-        side.grid_rowconfigure(3, weight=1)
+        # Scrollable side column — guarantees the three panels are always
+        # fully reachable regardless of window height.
+        self._side = ctk.CTkScrollableFrame(
+            body,
+            fg_color="transparent",
+            scrollbar_button_color=palette["panel_border"],
+            scrollbar_button_hover_color=palette["accent"],
+        )
+        self._side.grid(row=0, column=1, sticky="nsew")
+        self._side.grid_columnconfigure(0, weight=1)
 
         # Order: Full week → Range query inputs → Selected range output.
         self._week_panel = AnalyticsPanel(
-            side, self._state, title="Full week", mode="week", palette=palette
+            self._side, self._state, title="Full week", mode="week", palette=palette
         )
         self._week_panel.grid(row=0, column=0, sticky="ew", pady=(0, 12))
 
         self._range_panel = RangePanel(
-            side,
+            self._side,
             self._state,
             palette=palette,
             on_range_change=self._on_range_change,
@@ -180,9 +185,9 @@ class MainWindow(ctk.CTk):
         self._range_panel.grid(row=1, column=0, sticky="ew", pady=(0, 12))
 
         self._range_analytics = AnalyticsPanel(
-            side, self._state, title="Selected range", mode="range", palette=palette
+            self._side, self._state, title="Selected range", mode="range", palette=palette
         )
-        self._range_analytics.grid(row=2, column=0, sticky="ew")
+        self._range_analytics.grid(row=2, column=0, sticky="ew", pady=(0, 12))
 
     # ---- fetch lifecycle -------------------------------------------------
 
@@ -261,6 +266,10 @@ class MainWindow(ctk.CTk):
         )
         self._error_label.configure(text_color=palette["error_text"])
         self._chart.configure(fg_color=palette["bg"])
+        self._side.configure(
+            scrollbar_button_color=palette["panel_border"],
+            scrollbar_button_hover_color=palette["accent"],
+        )
         self._week_panel.apply_theme(palette)
         self._range_analytics.apply_theme(palette)
         self._range_panel.apply_theme(palette)

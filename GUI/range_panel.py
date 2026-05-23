@@ -80,7 +80,7 @@ class _CalendarPopup(ctk.CTkToplevel):
         self.update_idletasks()
         x = anchor.winfo_rootx()
         y = anchor.winfo_rooty() + anchor.winfo_height() + 4
-        self.geometry(f"320x340+{x}+{y}")
+        self.geometry(f"360x400+{x}+{y}")
 
     def _build(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
@@ -115,37 +115,42 @@ class _CalendarPopup(ctk.CTkToplevel):
         )
         self._next_btn.pack(side="right")
 
-        dow_frame = ctk.CTkFrame(self, fg_color="transparent")
-        dow_frame.pack(fill="x", padx=16, pady=(0, 2))
+        dow_frame = ctk.CTkFrame(self, fg_color=self._palette["panel_bg"])
+        dow_frame.pack(fill="x", padx=16, pady=(0, 4))
         for i, label in enumerate(self.DAY_LABELS):
             lbl = ctk.CTkLabel(
                 dow_frame, text=label,
-                font=(FONT_FAMILY, 11, "bold"),
+                font=(FONT_FAMILY, 12, "bold"),
                 text_color=self._palette["text_muted"],
-                width=36,
+                width=42,
             )
-            lbl.grid(row=0, column=i, padx=1, pady=2)
+            lbl.grid(row=0, column=i, padx=1, pady=4)
             dow_frame.grid_columnconfigure(i, weight=1)
 
-        self._grid_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self._grid_frame.pack(fill="both", expand=True, padx=16, pady=(0, 14))
+        self._grid_frame = ctk.CTkFrame(self, fg_color=self._palette["panel_bg"])
+        self._grid_frame.pack(fill="both", expand=True, padx=16, pady=(0, 16))
         for c in range(7):
             self._grid_frame.grid_columnconfigure(c, weight=1)
 
+        # Use explicit panel_bg as the button background (not "transparent")
+        # because transparent buttons inside a Toplevel grid can render their
+        # text invisibly on some Linux WMs.
         self._date_buttons: list[list[ctk.CTkButton]] = []
         for r in range(6):
             row: list[ctk.CTkButton] = []
             for c in range(7):
                 btn = ctk.CTkButton(
-                    self._grid_frame, text="", width=36, height=36,
-                    font=(FONT_FAMILY, FONT_SIZES["calendar_day"]),
-                    fg_color="transparent",
+                    self._grid_frame, text="", width=42, height=42,
+                    font=(FONT_FAMILY, FONT_SIZES["calendar_day"], "bold"),
+                    fg_color=self._palette["panel_bg"],
                     hover_color=self._palette["hover_bg"],
                     text_color=self._palette["text_primary"],
-                    corner_radius=18,
+                    text_color_disabled=self._palette["text_muted"],
+                    corner_radius=21,
+                    border_width=0,
                     command=lambda rr=r, cc=c: self._on_cell_click(rr, cc),
                 )
-                btn.grid(row=r, column=c, padx=1, pady=1)
+                btn.grid(row=r, column=c, padx=2, pady=2)
                 row.append(btn)
             self._date_buttons.append(row)
 
@@ -208,6 +213,7 @@ class _CalendarPopup(ctk.CTkToplevel):
     def _style_cell(self, btn: ctk.CTkButton, day_num: int, d: date, *, in_current_month: bool) -> None:
         in_range = self._min <= d <= self._max
         is_selected = d == self._selected
+        bg = self._palette["panel_bg"]
 
         if is_selected and in_range:
             btn.configure(
@@ -220,15 +226,16 @@ class _CalendarPopup(ctk.CTkToplevel):
         elif not in_range:
             btn.configure(
                 text=str(day_num),
-                fg_color="transparent",
+                fg_color=bg,
                 text_color=self._palette["text_muted"],
-                hover_color=self._palette["panel_bg"],
+                text_color_disabled=self._palette["text_muted"],
+                hover_color=bg,
                 state="disabled",
             )
         elif not in_current_month:
             btn.configure(
                 text=str(day_num),
-                fg_color="transparent",
+                fg_color=bg,
                 text_color=self._palette["text_muted"],
                 hover_color=self._palette["hover_bg"],
                 state="normal",
@@ -236,7 +243,7 @@ class _CalendarPopup(ctk.CTkToplevel):
         else:
             btn.configure(
                 text=str(day_num),
-                fg_color="transparent",
+                fg_color=bg,
                 text_color=self._palette["text_primary"],
                 hover_color=self._palette["hover_bg"],
                 state="normal",
