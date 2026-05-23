@@ -1,10 +1,10 @@
 """
-yfinance-backed loader for the Stock Analysis V2 GUI.
+yfinance-backed loader for the Stock Analysis GUI.
 
 Returns 1-week, 1-minute close-price data with timestamps in the system's
-local timezone. Fixes the V1 bug where the index was converted to UTC and
-then `tz_localize(None)`'d, leaving naive-UTC datetimes that the user
-silently misread as local wall-clock time.
+local timezone. Fixes the original-CLI bug where the index was converted
+to UTC and then `tz_localize(None)`'d, leaving naive-UTC datetimes that
+the user silently misread as local wall-clock time.
 """
 
 from __future__ import annotations
