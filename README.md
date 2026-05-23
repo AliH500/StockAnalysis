@@ -226,13 +226,33 @@ python3 GUI/main.py
 
 ### Build your own executable
 
+**Linux / macOS:**
+
 ```bash
 bash GUI/build.sh
 ```
 
-Output: `dist/StockAnalysis` (Linux) or `dist/StockAnalysis.exe` (Windows). The script uses PyInstaller `--onefile` and bundles the segment-tree modules, the Nunito font, and all CustomTkinter assets into a single file.
+**Windows** (PowerShell — note the `;` data separator instead of `:`):
 
-> **Cross-platform note:** PyInstaller does not cross-compile. To produce a Windows `.exe`, run `build.sh` (or the equivalent PyInstaller command) on a Windows machine; for macOS, on macOS.
+```powershell
+python -m PyInstaller `
+    --noconfirm --clean --onefile --windowed `
+    --name StockAnalysis `
+    --paths GUI `
+    --add-data "GUI/fonts;fonts" `
+    --add-data "StockAnalysis.py;v1" `
+    --add-data "Segment_tree_adt.py;v1" `
+    --collect-all customtkinter `
+    --collect-all tkcalendar `
+    --hidden-import PIL._tkinter_finder `
+    GUI/main.py
+```
+
+Output: `dist/StockAnalysis` (Linux/macOS) or `dist/StockAnalysis.exe` (Windows). The build bundles the segment-tree modules, the **entire** Nunito font family (Regular / Medium / Bold / Italic / etc., so weights render with real glyphs instead of faux-bolded Medium), and all CustomTkinter assets into a single file.
+
+**On Windows the GUI loads Nunito via `AddFontResourceExW` (Win32 GDI) — no `tkextrafont` dependency, no system-wide font install, no admin rights.** The Tk widgets will render in Nunito on every Windows machine that runs the executable.
+
+> **Cross-platform note:** PyInstaller does not cross-compile. To produce a Windows `.exe`, run the PowerShell command above on a Windows machine; for macOS, on macOS.
 
 ---
 
