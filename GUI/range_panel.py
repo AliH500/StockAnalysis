@@ -70,6 +70,11 @@ class _DateTimePicker(ctk.CTkFrame):
 
         self.hh = tk.StringVar(value="00")
         self.mm = tk.StringVar(value="00")
+        # `trace_add('write', ...)` catches both arrow clicks and keyboard
+        # input. Tk's Spinbox does not expose `<<Increment>>`/`<<Decrement>>`
+        # virtual events, so a StringVar trace is the only universal hook.
+        self.hh.trace_add("write", lambda *_a: self._on_change())
+        self.mm.trace_add("write", lambda *_a: self._on_change())
 
         self.hh_spin = tk.Spinbox(
             self,
@@ -100,11 +105,6 @@ class _DateTimePicker(ctk.CTkFrame):
             state="disabled",
         )
         self.mm_spin.grid(row=0, column=4)
-
-        for spin in (self.hh_spin, self.mm_spin):
-            spin.bind("<FocusOut>", lambda _e: self._on_change())
-            spin.bind("<Increment>", lambda _e: self.after(1, self._on_change))
-            spin.bind("<Decrement>", lambda _e: self.after(1, self._on_change))
 
         self._apply_spinbox_style(palette)
 

@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import matplotlib as mpl
 
-FONT_FAMILY = "Nunito Medium"
+# matplotlib reads the TTF's family name from its name table; for the
+# Nunito-Medium static TTF that is "Nunito" (Medium is a weight, not part
+# of the family). Use this constant everywhere so the font lookup matches.
+FONT_FAMILY = "Nunito"
 
 DARK_PALETTE: dict = {
     "bg": "#0E1116",

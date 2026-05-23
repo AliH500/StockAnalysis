@@ -27,8 +27,8 @@ class ChartWidget(ctk.CTkFrame):
         self._fig.subplots_adjust(left=0.08, right=0.97, top=0.94, bottom=0.14)
         self._ax = self._fig.add_subplot(111)
 
-        self._canvas = FigureCanvasTkAgg(self._fig, master=self)
-        self._canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
+        self._mpl_canvas = FigureCanvasTkAgg(self._fig, master=self)
+        self._mpl_canvas.get_tk_widget().pack(fill="both", expand=True, padx=8, pady=8)
 
     def draw(self, palette: dict) -> None:
         ax = self._ax
@@ -48,7 +48,7 @@ class ChartWidget(ctk.CTkFrame):
                 color=palette["placeholder_text"],
                 fontsize=16,
             )
-            self._canvas.draw_idle()
+            self._mpl_canvas.draw_idle()
             return
 
         timestamps = self._state.timestamps
@@ -83,7 +83,7 @@ class ChartWidget(ctk.CTkFrame):
             pad=10,
             loc="left",
         )
-        self._canvas.draw_idle()
+        self._mpl_canvas.draw_idle()
 
     def _gradient_fill(self, ax, x: np.ndarray, y: np.ndarray, palette: dict) -> None:
         """Vertical gradient under the price curve via `pcolormesh` + clip."""
