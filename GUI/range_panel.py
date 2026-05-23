@@ -23,9 +23,7 @@ from tkcalendar import DateEntry
 from app_state import AppState
 from theme import FONT_FAMILY
 
-# Re-export V1's binary-search lookup. `app_state` already inserted the
-# nested-repo root into sys.path on import.
-from StockAnalysis import datetime_to_index  # noqa: E402
+from v1_bridge import datetime_to_index
 
 
 class _DateTimePicker(ctk.CTkFrame):
