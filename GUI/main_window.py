@@ -161,9 +161,13 @@ class MainWindow(ctk.CTk):
 
         # Scrollable side column — guarantees the three panels are always
         # fully reachable regardless of window height.
+        # Note: an explicit `fg_color` (not "transparent") is required so the
+        # inner scroll canvas repaints when the theme toggles. CTk's
+        # `transparent` propagation does not always reach the scrollable
+        # frame's internal canvas, leaving a stale light bg in dark mode.
         self._side = ctk.CTkScrollableFrame(
             body,
-            fg_color="transparent",
+            fg_color=palette["bg"],
             scrollbar_button_color=palette["panel_border"],
             scrollbar_button_hover_color=palette["accent"],
         )
@@ -267,6 +271,7 @@ class MainWindow(ctk.CTk):
         self._error_label.configure(text_color=palette["error_text"])
         self._chart.configure(fg_color=palette["bg"])
         self._side.configure(
+            fg_color=palette["bg"],
             scrollbar_button_color=palette["panel_border"],
             scrollbar_button_hover_color=palette["accent"],
         )

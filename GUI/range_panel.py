@@ -2,9 +2,10 @@
 Range-query panel: a 2-row grid of (date-button + HH spinbox + MM spinbox)
 for Start and End, with column headers (Date / Hour / Minute).
 
-The date button opens a custom CTkToplevel calendar popup styled to feel
-closer to Google Calendar's clean grid than `tkcalendar.DateEntry`'s
-default popup.
+The date button opens a custom `tk.Toplevel` calendar popup. Each date
+cell is a raw `tk.Canvas` with an oval + text item — that bypasses every
+CustomTkinter rendering quirk inside a popup and renders the day numbers
+reliably on every WM tested.
 
 Critical correctness note: V1's `datetime_to_index` lives in
 `StockAnalysis.py` and compares datetimes with raw `<`/`>` — it only
@@ -17,6 +18,7 @@ from __future__ import annotations
 
 import calendar as cal_module
 import tkinter as tk
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Callable
 
@@ -35,10 +37,24 @@ from StockAnalysis import datetime_to_index  # noqa: E402
 # --------------------------------------------------------------------------- #
 
 
-class _CalendarPopup(ctk.CTkToplevel):
-    """Borderless month-view date picker. Modal via grab_set; ESC to cancel."""
+@dataclass
+class _CalCell:
+    canvas: tk.Canvas
+    oval_id: int
+    text_id: int
+    date: date | None = None
+    in_range: bool = False
+    # "active" (in-month, clickable) / "muted" (other-month) /
+    # "selected" / "disabled" (out-of-data-range).
+    state: str = "muted"
+
+
+class _CalendarPopup(tk.Toplevel):
+    """Borderless month picker built entirely from raw Tk widgets."""
 
     DAY_LABELS = ("S", "M", "T", "W", "T", "F", "S")  # Sunday-first
+    CELL = 44   # cell width/height in px
+    PAD = 3     # outer padding around the oval inside the cell
 
     def __init__(
         self,
@@ -59,8 +75,11 @@ class _CalendarPopup(ctk.CTkToplevel):
         self._month_view = selected.replace(day=1)
 
         self.overrideredirect(True)
-        self.configure(fg_color=palette["panel_bg"])
+        self.configure(bg=palette["panel_border"])  # 1 px border via outer bg
         self.attributes("-topmost", True)
+
+        self._inner = tk.Frame(self, bg=palette["panel_bg"])
+        self._inner.pack(fill="both", expand=True, padx=1, pady=1)
 
         self._build()
         self._populate()
@@ -71,6 +90,7 @@ class _CalendarPopup(ctk.CTkToplevel):
 
     def _grab(self) -> None:
         try:
+            self.wait_visibility()
             self.grab_set()
             self.focus_force()
         except tk.TclError:
@@ -79,80 +99,82 @@ class _CalendarPopup(ctk.CTkToplevel):
     def _position_below(self, anchor) -> None:
         self.update_idletasks()
         x = anchor.winfo_rootx()
-        y = anchor.winfo_rooty() + anchor.winfo_height() + 4
-        self.geometry(f"360x400+{x}+{y}")
+        y = anchor.winfo_rooty() + anchor.winfo_height() + 6
+        w = self.CELL * 7 + 36
+        h = self.CELL * 6 + 112
+        self.geometry(f"{w}x{h}+{x}+{y}")
 
     def _build(self) -> None:
-        header = ctk.CTkFrame(self, fg_color="transparent")
+        p = self._palette
+
+        # Header: prev | Month YYYY | next
+        header = tk.Frame(self._inner, bg=p["panel_bg"])
         header.pack(fill="x", padx=16, pady=(14, 8))
 
-        self._prev_btn = ctk.CTkButton(
-            header, text="‹", width=34, height=34,
-            font=(FONT_FAMILY, 20, "bold"),
-            fg_color="transparent",
-            hover_color=self._palette["hover_bg"],
-            text_color=self._palette["text_primary"],
-            corner_radius=17,
-            command=self._prev_month,
-        )
+        self._prev_btn = self._nav_button(header, "‹", self._prev_month)
         self._prev_btn.pack(side="left")
 
-        self._month_label = ctk.CTkLabel(
+        self._month_label = tk.Label(
             header, text="",
             font=(FONT_FAMILY, FONT_SIZES["calendar_header"], "bold"),
-            text_color=self._palette["text_primary"],
+            bg=p["panel_bg"], fg=p["text_primary"],
         )
         self._month_label.pack(side="left", expand=True)
 
-        self._next_btn = ctk.CTkButton(
-            header, text="›", width=34, height=34,
-            font=(FONT_FAMILY, 20, "bold"),
-            fg_color="transparent",
-            hover_color=self._palette["hover_bg"],
-            text_color=self._palette["text_primary"],
-            corner_radius=17,
-            command=self._next_month,
-        )
+        self._next_btn = self._nav_button(header, "›", self._next_month)
         self._next_btn.pack(side="right")
 
-        dow_frame = ctk.CTkFrame(self, fg_color=self._palette["panel_bg"])
-        dow_frame.pack(fill="x", padx=16, pady=(0, 4))
+        # Day-of-week labels
+        dow = tk.Frame(self._inner, bg=p["panel_bg"])
+        dow.pack(padx=16, pady=(0, 4))
         for i, label in enumerate(self.DAY_LABELS):
-            lbl = ctk.CTkLabel(
-                dow_frame, text=label,
-                font=(FONT_FAMILY, 12, "bold"),
-                text_color=self._palette["text_muted"],
-                width=42,
-            )
-            lbl.grid(row=0, column=i, padx=1, pady=4)
-            dow_frame.grid_columnconfigure(i, weight=1)
+            tk.Label(
+                dow, text=label, width=3,
+                font=(FONT_FAMILY, 11, "bold"),
+                bg=p["panel_bg"], fg=p["text_muted"],
+            ).grid(row=0, column=i, padx=3, pady=2)
 
-        self._grid_frame = ctk.CTkFrame(self, fg_color=self._palette["panel_bg"])
-        self._grid_frame.pack(fill="both", expand=True, padx=16, pady=(0, 16))
-        for c in range(7):
-            self._grid_frame.grid_columnconfigure(c, weight=1)
+        # Date grid: one tk.Canvas per cell, oval + centred text item.
+        grid = tk.Frame(self._inner, bg=p["panel_bg"])
+        grid.pack(padx=16, pady=(0, 14))
 
-        # Use explicit panel_bg as the button background (not "transparent")
-        # because transparent buttons inside a Toplevel grid can render their
-        # text invisibly on some Linux WMs.
-        self._date_buttons: list[list[ctk.CTkButton]] = []
+        self._cells: list[list[_CalCell]] = []
         for r in range(6):
-            row: list[ctk.CTkButton] = []
+            row: list[_CalCell] = []
             for c in range(7):
-                btn = ctk.CTkButton(
-                    self._grid_frame, text="", width=42, height=42,
-                    font=(FONT_FAMILY, FONT_SIZES["calendar_day"], "bold"),
-                    fg_color=self._palette["panel_bg"],
-                    hover_color=self._palette["hover_bg"],
-                    text_color=self._palette["text_primary"],
-                    text_color_disabled=self._palette["text_muted"],
-                    corner_radius=21,
-                    border_width=0,
-                    command=lambda rr=r, cc=c: self._on_cell_click(rr, cc),
+                canvas = tk.Canvas(
+                    grid, width=self.CELL, height=self.CELL,
+                    bg=p["panel_bg"], highlightthickness=0, bd=0,
                 )
-                btn.grid(row=r, column=c, padx=2, pady=2)
-                row.append(btn)
-            self._date_buttons.append(row)
+                canvas.grid(row=r, column=c, padx=1, pady=1)
+                oval_id = canvas.create_oval(
+                    self.PAD, self.PAD,
+                    self.CELL - self.PAD, self.CELL - self.PAD,
+                    fill="", outline="",
+                )
+                text_id = canvas.create_text(
+                    self.CELL // 2, self.CELL // 2,
+                    text="", fill=p["text_primary"],
+                    font=(FONT_FAMILY, 14, "bold"),
+                )
+                cell = _CalCell(canvas=canvas, oval_id=oval_id, text_id=text_id)
+                canvas.bind("<Button-1>", lambda _e, rr=r, cc=c: self._on_cell_click(rr, cc))
+                canvas.bind("<Enter>", lambda _e, rr=r, cc=c: self._on_hover_enter(rr, cc))
+                canvas.bind("<Leave>", lambda _e, rr=r, cc=c: self._on_hover_leave(rr, cc))
+                row.append(cell)
+            self._cells.append(row)
+
+    def _nav_button(self, parent, text: str, command) -> tk.Button:
+        p = self._palette
+        return tk.Button(
+            parent, text=text, width=2,
+            font=(FONT_FAMILY, 18, "bold"),
+            bg=p["panel_bg"], fg=p["text_primary"],
+            activebackground=p["hover_bg"], activeforeground=p["text_primary"],
+            disabledforeground=p["text_muted"],
+            relief="flat", borderwidth=0, highlightthickness=0,
+            cursor="hand2", command=command,
+        )
 
     def _populate(self) -> None:
         year = self._month_view.year
@@ -160,7 +182,7 @@ class _CalendarPopup(ctk.CTkToplevel):
         self._month_label.configure(text=f"{cal_module.month_name[month]} {year}")
 
         first = date(year, month, 1)
-        # Python's weekday: Mon=0, Sun=6. We want Sun=0 for column 0.
+        # Python's weekday: Mon=0, Sun=6. We want Sun=0 in column 0.
         offset = (first.weekday() + 1) % 7
         days_in_month = cal_module.monthrange(year, month)[1]
 
@@ -170,37 +192,28 @@ class _CalendarPopup(ctk.CTkToplevel):
         next_year = year if month < 12 else year + 1
         next_month = month + 1 if month < 12 else 1
 
-        self._cell_dates: list[list[date | None]] = [[None] * 7 for _ in range(6)]
-
-        # Leading days from previous month
+        # Leading slots from previous month
         for i in range(offset):
             day_num = prev_days - offset + 1 + i
             d = date(prev_year, prev_month, day_num)
-            btn = self._date_buttons[0][i]
-            self._style_cell(btn, day_num, d, in_current_month=False)
-            self._cell_dates[0][i] = d
+            self._style_cell(self._cells[0][i], day_num, d, in_current_month=False)
 
         # Current month
         for day_num in range(1, days_in_month + 1):
             idx = offset + day_num - 1
             r, c = idx // 7, idx % 7
             d = date(year, month, day_num)
-            btn = self._date_buttons[r][c]
-            self._style_cell(btn, day_num, d, in_current_month=True)
-            self._cell_dates[r][c] = d
+            self._style_cell(self._cells[r][c], day_num, d, in_current_month=True)
 
-        # Trailing days from next month
+        # Trailing slots from next month
         filled = offset + days_in_month
         for i in range(42 - filled):
             day_num = i + 1
             idx = filled + i
             r, c = idx // 7, idx % 7
             d = date(next_year, next_month, day_num)
-            btn = self._date_buttons[r][c]
-            self._style_cell(btn, day_num, d, in_current_month=False)
-            self._cell_dates[r][c] = d
+            self._style_cell(self._cells[r][c], day_num, d, in_current_month=False)
 
-        # Nav button disable when next click would leave the allowed range.
         prev_first = (first - timedelta(days=1)).replace(day=1)
         self._prev_btn.configure(
             state="normal" if prev_first >= self._min.replace(day=1) else "disabled"
@@ -210,44 +223,40 @@ class _CalendarPopup(ctk.CTkToplevel):
             state="normal" if next_first <= self._max else "disabled"
         )
 
-    def _style_cell(self, btn: ctk.CTkButton, day_num: int, d: date, *, in_current_month: bool) -> None:
+    def _style_cell(self, cell: _CalCell, day_num: int, d: date, *, in_current_month: bool) -> None:
+        p = self._palette
         in_range = self._min <= d <= self._max
         is_selected = d == self._selected
-        bg = self._palette["panel_bg"]
+        cell.date = d
+        cell.in_range = in_range
+        cell.canvas.itemconfig(cell.text_id, text=str(day_num))
 
         if is_selected and in_range:
-            btn.configure(
-                text=str(day_num),
-                fg_color=self._palette["accent"],
-                text_color="#FFFFFF",
-                hover_color=self._palette["accent_muted"],
-                state="normal",
-            )
+            cell.state = "selected"
+            cell.canvas.itemconfig(cell.oval_id, fill=p["accent"], outline="")
+            cell.canvas.itemconfig(cell.text_id, fill="#FFFFFF")
         elif not in_range:
-            btn.configure(
-                text=str(day_num),
-                fg_color=bg,
-                text_color=self._palette["text_muted"],
-                text_color_disabled=self._palette["text_muted"],
-                hover_color=bg,
-                state="disabled",
-            )
+            cell.state = "disabled"
+            cell.canvas.itemconfig(cell.oval_id, fill="", outline="")
+            cell.canvas.itemconfig(cell.text_id, fill=p["text_muted"])
         elif not in_current_month:
-            btn.configure(
-                text=str(day_num),
-                fg_color=bg,
-                text_color=self._palette["text_muted"],
-                hover_color=self._palette["hover_bg"],
-                state="normal",
-            )
+            cell.state = "muted"
+            cell.canvas.itemconfig(cell.oval_id, fill="", outline="")
+            cell.canvas.itemconfig(cell.text_id, fill=p["text_muted"])
         else:
-            btn.configure(
-                text=str(day_num),
-                fg_color=bg,
-                text_color=self._palette["text_primary"],
-                hover_color=self._palette["hover_bg"],
-                state="normal",
-            )
+            cell.state = "active"
+            cell.canvas.itemconfig(cell.oval_id, fill="", outline="")
+            cell.canvas.itemconfig(cell.text_id, fill=p["text_primary"])
+
+    def _on_hover_enter(self, r: int, c: int) -> None:
+        cell = self._cells[r][c]
+        if cell.state in ("active", "muted"):
+            cell.canvas.itemconfig(cell.oval_id, fill=self._palette["hover_bg"])
+
+    def _on_hover_leave(self, r: int, c: int) -> None:
+        cell = self._cells[r][c]
+        if cell.state in ("active", "muted"):
+            cell.canvas.itemconfig(cell.oval_id, fill="")
 
     def _prev_month(self) -> None:
         if self._month_view.month == 1:
@@ -264,10 +273,10 @@ class _CalendarPopup(ctk.CTkToplevel):
         self._populate()
 
     def _on_cell_click(self, r: int, c: int) -> None:
-        d = self._cell_dates[r][c]
-        if d is None or not (self._min <= d <= self._max):
+        cell = self._cells[r][c]
+        if cell.date is None or not cell.in_range:
             return
-        self._on_select(d)
+        self._on_select(cell.date)
         self.destroy()
 
 

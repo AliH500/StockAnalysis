@@ -44,8 +44,11 @@ DARK_PALETTE: dict = {
     "text_primary": "#E6EDF3",
     "text_secondary": "#8B949E",
     "text_muted": "#5C6772",
-    "accent": "#58A6FF",
-    "accent_muted": "#1F6FEB",
+    # Dark-mode accent pulled towards black: a quiet slate-navy that still
+    # reads as accent against the dark panel bg but no longer competes with
+    # the chart's green/red as a visual focal point.
+    "accent": "#3B5474",
+    "accent_muted": "#26384F",
     "hover_bg": "#1E242C",
     "axes_bg": "#0E1116",
     "tick_color": "#8B949E",
