@@ -10,6 +10,7 @@ Side-column order: Full week → Range query inputs → Selected range output.
 from __future__ import annotations
 
 import queue
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -27,7 +28,18 @@ from theme import FONT_FAMILY, FONT_SIZES, get_palette
 
 POLL_INTERVAL_MS = 100
 ERROR_AUTOCLEAR_MS = 5000
-FONT_PATH = Path(__file__).resolve().parent / "fonts" / "Nunito-Medium.ttf"
+
+
+def _resource_base() -> Path:
+    """Where bundled assets live, whether running from source or a PyInstaller
+    one-file executable. PyInstaller sets `sys._MEIPASS` to the temp extract
+    dir; from source we resolve relative to this file."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parent
+
+
+FONT_PATH = _resource_base() / "fonts" / "Nunito-Medium.ttf"
 
 
 def _register_fonts() -> tuple[bool, bool]:

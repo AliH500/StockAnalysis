@@ -1,8 +1,31 @@
 # 📈 StockAnalysis — Range Analytics using Segment trees
 
-> **DSA Project** by **Ali Hani**· *Prof. Nadia Nasir, L3*
+> **DSA Project** by **Ali Hani** · *Prof. Nadia Nasir, L3*
 
-A command-line Python application that fetches real-time stock data and performs lightning-fast range-based analytics using **Segment Trees** — turning O(n) brute-force lookups into O(log n) queries.
+A Python application that fetches real-time stock data and performs lightning-fast range-based analytics using **Segment Trees** — turning O(n) brute-force lookups into O(log n) queries. Ships in two flavours: the original **command-line tool** and a polished **desktop GUI**.
+
+---
+
+## 🚀 Try the GUI demo
+
+The GUI is a single-window desktop app with a gradient price chart, six segment-tree analytics across both the full week and a user-defined sub-range, and a custom date picker.
+
+**Download the pre-built executable** from the [latest GitHub release](https://github.com/AliH500/StockAnalysis/releases/latest) — no Python install required.
+
+| Platform | Build | Notes |
+|---|---|---|
+| **Linux x86_64** | `StockAnalysis` (single file) | Built with PyInstaller; ~150 MB. Mark executable, then double-click. |
+| **Windows** | not pre-built | Build from source on a Windows machine — see the section at the end. |
+| **macOS** | not pre-built | Same — build from source on macOS. |
+
+Once downloaded:
+
+```bash
+chmod +x StockAnalysis
+./StockAnalysis
+```
+
+> If your machine doesn't have Nunito installed system-wide, the GUI's Tk widgets fall back to a default sans. The hero chart always uses the bundled Nunito.
 
 ---
 
@@ -34,6 +57,7 @@ With 1 week of minute-by-minute stock data, we're working with up to **10,080 da
   - 📊 Price range (max − min) — `O(log n)`
   - 📦 Interquartile Range (IQR) — `O(n log n)`
 - **Smart datetime parsing** — accepts multiple datetime input formats with binary-search index mapping to the actual stock data retrived from API
+- **GUI extras** — green/red price line that flips at the 7-day-ago baseline, gradient fill, custom date picker, dark/light theme toggle, all timestamps shown in the user's local timezone
 
 ---
 
@@ -42,18 +66,31 @@ With 1 week of minute-by-minute stock data, we're working with up to **10,080 da
 ```
 StockAnalysis/
 │
-├── StockAnalysis.py          # Main entry point: data fetching, tree construction, query loop
+├── StockAnalysis.py          # CLI entry point: data fetching, tree construction, query loop
 ├── Segment_tree_adt.py       # Segment tree ADT: build, query, and analytics functions
 ├── Segmenttree_testcases.py  # Unit tests for the segment tree implementation
 │
 ├── AAPL__2026-04-30.csv      # Example cached data (Apple)
 ├── GOOG__2026-04-30.csv      # Example cached data (Google)
-└── MSFT__2026-04-30.csv      # Example cached data (Microsoft)
+├── MSFT__2026-04-30.csv      # Example cached data (Microsoft)
+│
+└── GUI/                      # Desktop GUI rewrite
+    ├── main.py               # Entry point
+    ├── main_window.py        # Window, layout, fetch thread, theme toggle
+    ├── chart_widget.py       # Matplotlib chart with gradient fill + green/red line
+    ├── analytics_panel.py    # Six-metric panel (full-week and sub-range)
+    ├── range_panel.py        # Date pickers + HH/MM spinners + custom calendar
+    ├── data_loader.py        # yfinance wrapper, timestamps in system local zone
+    ├── app_state.py          # Mutable state shared across widgets
+    ├── theme.py              # Dark + light palettes, type scale
+    ├── build.sh              # PyInstaller build script
+    ├── requirements.txt      # Python dependencies
+    └── fonts/Nunito-*.ttf    # Bundled font family
 ```
 
 ---
 
-## ⚙️ Setup & Installation
+## ⚙️ CLI Setup & Installation
 
 **Prerequisites:** Python 3.8+
 
@@ -68,7 +105,7 @@ pip install yfinance pandas
 
 ---
 
-## 🚀 Usage
+## 🚀 CLI Usage
 
 ```bash
 python StockAnalysis.py
@@ -156,6 +193,58 @@ python Segmenttree_testcases.py
 | Name | Role |
 |------|------|
 | **Ali Hani** | Solo-Developer |
+
+---
+
+## 🛠️ Run the GUI from source
+
+For contributors and anyone who'd rather skip the executable.
+
+### Required system packages
+
+The GUI uses Tk + PIL's Tk bindings, both of which Linux distros split out from the base Python install:
+
+| OS | Install |
+|---|---|
+| Fedora / RHEL | `sudo dnf install python3-tkinter python3-pillow-tk` |
+| Ubuntu / Debian | `sudo apt install python3-tk python3-pil.imagetk` |
+| Arch | `sudo pacman -S tk python-pillow` |
+| macOS | Tk ships with the python.org installer; Pillow via pip |
+| Windows | Tk ships with the python.org installer; Pillow via pip |
+
+### Python dependencies
+
+```bash
+cd StockAnalysis
+python3 -m pip install --user -r GUI/requirements.txt
+```
+
+This pulls in:
+
+- `customtkinter` — modern Tk widget library
+- `matplotlib` — embedded chart with gradient fill
+- `tkcalendar` — historical dep, retained but the popup is now custom
+- `yfinance` + `pandas` — data fetch
+- `Pillow` — image support for CustomTkinter
+- `tkextrafont` — *optional*; lets the bundled Nunito font load into Tk widgets without a system-wide font install. Build prerequisites (Tcl/Tk dev headers + scikit-build) often need a system install; safe to skip — the GUI falls back to system fonts for Tk widgets.
+
+### Launch
+
+From the repo root:
+
+```bash
+python3 GUI/main.py
+```
+
+### Build your own executable
+
+```bash
+bash GUI/build.sh
+```
+
+Output: `dist/StockAnalysis` (Linux) or `dist/StockAnalysis.exe` (Windows). The script uses PyInstaller `--onefile` and bundles the segment-tree modules, the Nunito font, and all CustomTkinter assets into a single file.
+
+> **Cross-platform note:** PyInstaller does not cross-compile. To produce a Windows `.exe`, run `build.sh` (or the equivalent PyInstaller command) on a Windows machine; for macOS, on macOS.
 
 ---
 

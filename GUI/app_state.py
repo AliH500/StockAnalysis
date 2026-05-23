@@ -15,11 +15,16 @@ from datetime import datetime
 from pathlib import Path
 
 # V1's `StockAnalysis.py` and `Segment_tree_adt.py` live one level up at
-# the nested-repo root. Adding the parent dir to sys.path is the cleanest
-# import path that does not require restructuring the V1 files.
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# the nested-repo root when running from source. In a PyInstaller one-file
+# bundle they are copied into `sys._MEIPASS/v1/` via `--add-data`. Either
+# way, add the resolved directory to sys.path so the unqualified imports
+# below resolve without restructuring the V1 files.
+if getattr(sys, "frozen", False):
+    _V1_ROOT = Path(sys._MEIPASS) / "v1"  # type: ignore[attr-defined]
+else:
+    _V1_ROOT = Path(__file__).resolve().parent.parent
+if str(_V1_ROOT) not in sys.path:
+    sys.path.insert(0, str(_V1_ROOT))
 
 from StockAnalysis import build_trees  # noqa: E402
 
